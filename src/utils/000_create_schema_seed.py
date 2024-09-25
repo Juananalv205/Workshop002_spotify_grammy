@@ -28,22 +28,22 @@ class CreateSchemaSeed:
         }
         try:
             # Start building the SQL script
-            sql_script = f"CREATE TABLE {table_name} (\n"
+            sql_script = f'CREATE TABLE "{table_name}" (\n'
             
             # Iterate through the DataFrame columns to generate columns and data types
             for col in df.columns:
                 if col not in ['key', 'explicit']:
                     col_type = str(df[col].dtype)  # Get column data type
                     postgres_type = type_mapping.get(col_type, 'TEXT')  # Map the pandas data type to a PostgreSQL type; defaults to 'TEXT' if not found
-                    sql_script += f"    {col} {postgres_type},\n"
+                    sql_script += f'    "{col}" {postgres_type},\n'
                 elif col == 'key':
                     col_type = str(df[col].dtype)
                     postgres_type = type_mapping.get(col_type, 'TEXT')
-                    sql_script += f"    {'key_column'} {postgres_type},\n"
+                    sql_script += f'    "key_column" {postgres_type},\n'
                 else:
                     col_type = str(df[col].dtype)
                     postgres_type = type_mapping.get(col_type, 'TEXT')
-                    sql_script += f"    {'explicit_column'} {postgres_type},\n"
+                    sql_script += f'    "explicit_column" {postgres_type},\n'
             
             # Remove the last comma and add the closing parenthesis
             sql_script = sql_script.rstrip(",\n") + "\n);"
@@ -52,10 +52,10 @@ class CreateSchemaSeed:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(sql_script)
             
-            return f"The SQL script has been successfully saved to {file_path}"
+            return f"✓ The SQL script has been successfully saved to {file_path}"
         except Exception as e:
-            return f"An error occurred: {e}"
-    
+            return f"✗ An error occurred: {e}"
+
     def create_seed_postgres(self, df, table_name, file_path):
         """
         Function to generate an SQL script for inserting data into a PostgreSQL table from a Pandas DataFrame.
@@ -69,10 +69,11 @@ class CreateSchemaSeed:
         """
         try:
             # Start building the SQL script
-            sql_script = f"INSERT INTO {table_name} VALUES\n"
+            sql_script = f'INSERT INTO "{table_name}" VALUES\n'
+            
             # Iterate through the rows of the DataFrame to generate the insert values
-            for _, row in df.iterrows():
-                values = ', '.join([f"'{str(val)}'" if isinstance(val, str) else str(val) for val in row.values])
+            for _, row in df.iterrows(): # _ is used to ignore the index returned by iterrows(), as it's not needed
+                values = ', '.join([f'"{str(val)}"' if isinstance(val, str) else str(val) for val in row.values])
                 sql_script += f"({values}),\n"
             
             # Remove the last comma and add the closing semicolon
@@ -82,7 +83,7 @@ class CreateSchemaSeed:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(sql_script)
             
-            return f"The SQL script has been successfully saved to {file_path}"
+            return f"✓ The SQL script has been successfully saved to {file_path}"
         
         except Exception as e:
-            return f"An error occurred: {e}"
+            return f"✗ An error occurred: {e}"
