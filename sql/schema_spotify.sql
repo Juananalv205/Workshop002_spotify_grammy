@@ -1,0 +1,23 @@
+CREATE TABLE "spotify_data" (
+    "Unnamed: 0" INTEGER,
+    "track_id" TEXT,
+    "artists" TEXT,
+    "album_name" TEXT,
+    "track_name" TEXT,
+    "popularity" INTEGER,
+    "duration_ms" INTEGER,
+    "explicit_column" BOOLEAN,
+    "danceability" FLOAT,
+    "energy" FLOAT,
+    "key_column" INTEGER,
+    "loudness" FLOAT,
+    "mode" INTEGER,
+    "speechiness" FLOAT,
+    "acousticness" FLOAT,
+    "instrumentalness" FLOAT,
+    "liveness" FLOAT,
+    "valence" FLOAT,
+    "tempo" FLOAT,
+    "time_signature" INTEGER,
+    "track_genre" TEXT
+);

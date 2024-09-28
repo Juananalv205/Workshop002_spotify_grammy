@@ -1,5 +1,4 @@
 import pandas as pd
-
 class CreateSchemaSeed:
     def __init__(self) -> None:
         pass
@@ -69,16 +68,20 @@ class CreateSchemaSeed:
         """
         try:
             # Start building the SQL script
-            sql_script = f'INSERT INTO "{table_name}" VALUES\n'
+            sql_script = ""
             
             # Iterate through the rows of the DataFrame to generate the insert values
-            for _, row in df.iterrows(): # _ is used to ignore the index returned by iterrows(), as it's not needed
-                values = ', '.join([f'"{str(val)}"' if isinstance(val, str) else str(val) for val in row.values])
-                sql_script += f"({values}),\n"
-            
-            # Remove the last comma and add the closing semicolon
-            sql_script = sql_script.rstrip(",\n") + ";"
-            
+            for _, row in df.iterrows():
+                # Crear la cadena de valores para cada fila
+                values = ', '.join([
+                    "'" + str(val).replace('"', ' ').replace("'", ' ').replace(';', ' ') + "'" if isinstance(val, str) 
+                    else f"{val:.6f}" if isinstance(val, float) and not val.is_integer() 
+                    else str(int(val)) if isinstance(val, float) and val.is_integer() 
+                    else str(val) 
+                    for val in row.values
+                ])
+                sql_script += f'INSERT INTO "{table_name}" VALUES ({values});\n'
+
             # Save the script to the specified location with UTF-8 encoding
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(sql_script)
@@ -87,3 +90,4 @@ class CreateSchemaSeed:
         
         except Exception as e:
             return f"✗ An error occurred: {e}"
+
