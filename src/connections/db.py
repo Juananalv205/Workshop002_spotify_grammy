@@ -41,11 +41,16 @@ class PostgreSQLConnection:
             self.mydb.close()
         return "Closed connection"
     
-    def open_query(self, query_path):
-        # Intenta abrir el archivo y leer el contenido
+    def open_query(self, query_path, table_name=None):
+        # Attempt to open the file and read the content
         with open(query_path, 'r', encoding='utf-8') as file:
             select_sql_script = file.read()
-        return select_sql_script
+        # Replace {{table_name}} with the value of table_name only if it is not None
+        if table_name is not None:
+            query = select_sql_script.replace("{{table_name}}", table_name)
+        else:
+            query = select_sql_script  # Keeps the original query if table_name is None
+        return query
         
     # Decorator defined inside the class
     def connection_decorator(func):
@@ -64,8 +69,7 @@ class PostgreSQLConnection:
             self.mydb.commit()
             return "✓ Query executed successfully."
         except psycopg2.Error as e:
-            raise Exception(f"✗ Error executing query: {e}")  # Lanza una excepción
-
+            raise Exception(f"✗ Error executing query: {e}") 
     @connection_decorator
     #Run select query without commit
     def run_select_query(self, query, params=None):

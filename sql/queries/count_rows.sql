@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM `{{table_name}}`;
+SELECT COUNT(*) FROM "{{table_name}}";

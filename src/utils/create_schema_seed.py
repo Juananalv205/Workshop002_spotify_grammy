@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 class CreateSchemaSeed:
     def __init__(self) -> None:
         pass
@@ -70,7 +70,7 @@ class CreateSchemaSeed:
         try:
             # Start building the SQL script
             sql_script = ""
-            
+            df = df.replace({np.nan: None})
             # Iterate through the rows of the DataFrame to generate the insert values
             for _, row in df.iterrows():
                 # Create the value string for each row
@@ -78,6 +78,7 @@ class CreateSchemaSeed:
                     "'" + str(val).replace('"', ' ').replace("'", ' ').replace(';', ' ') + "'" if isinstance(val, str) 
                     else f"{val:.6f}" if isinstance(val, float) and not val.is_integer() 
                     else str(int(val)) if isinstance(val, float) and val.is_integer() 
+                    else 'NULL' if val is None
                     else str(val) 
                     for val in row.values
                 ])
