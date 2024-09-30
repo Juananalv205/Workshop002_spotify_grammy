@@ -1,5 +1,4 @@
 import pandas as pd
-
 class DataAnalyzer:
     def __init__(self, data):
         self.data = data
@@ -37,25 +36,29 @@ class DataAnalyzer:
             kurtosis_value = round(column.kurt(), 2)
 
             results.append({
-                'Column Name': column_name,
                 'Mode': mode_value,
                 'Variance': variance_value,
                 'Skewness': skewness_value,
                 'Kurtosis': kurtosis_value,
             })
 
-        return pd.DataFrame(results)
+        return pd.DataFrame(results, index=selected_columns).reset_index().rename(columns={'index': 'Column Name'})
 
     def analyze_and_combine(self, selected_columns):
-        """Combines the statistics with the DataFrame description and returns only the combined DataFrame."""
-        # Calculate statistics for the selected columns
-        statistics_df = self.calculate_statistics(selected_columns)
+        """Combines the summary, description, and statistics of the DataFrame."""
+        # Create a summary of the data
+        summary_df = self.summarize_data(selected_columns)
 
-        # Combine statistics with the description of the DataFrame
+        # Get the description of the DataFrame
         describe_df = self.data[selected_columns].describe().T.reset_index()
         describe_df.rename(columns={'index': 'Column Name'}, inplace=True)
 
-        combined_df = pd.merge(statistics_df, describe_df, on='Column Name', how='inner')
+        # Calculate statistics for the selected columns
+        statistics_df = self.calculate_statistics(selected_columns)
+
+        # Combine all DataFrames into one, ensuring only one row per column
+        combined_df = pd.merge(summary_df, describe_df, on='Column Name', how='outer')
+        combined_df = pd.merge(combined_df, statistics_df, on='Column Name', how='outer')
 
         return combined_df
 
