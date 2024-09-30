@@ -61,4 +61,23 @@ class DataAnalyzer:
         combined_df = pd.merge(combined_df, statistics_df, on='Column Name', how='outer')
 
         return combined_df
+    
+    def analize_categorical_data(self, selected_columns):
+        """Transforms selected columns to categorical and combines summary, description, and statistics."""
+
+        # Create a summary of the data
+        summary_df = self.summarize_data(selected_columns)
+        
+        # Transform all selected columns to type 'object'
+        self.data[selected_columns] = self.data[selected_columns].astype('object')
+        
+        # Get the description for the categorical columns
+        describe_df = self.data[selected_columns].describe().T.reset_index()
+        describe_df.rename(columns={'index': 'Column Name'}, inplace=True)
+
+        # Combine summary and describe DataFrames
+        combined_df = pd.merge(summary_df, describe_df, on='Column Name', how='outer')
+
+        return combined_df
+    
 
