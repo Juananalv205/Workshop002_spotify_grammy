@@ -125,4 +125,17 @@ class PostgreSQLConnection:
         except Exception as e:
             print(f"✗ Unexpected error: {e}")
             raise
+    
+    @connection_decorator
+    #Create dataframe from query
+    def create_dataframe(self, query_path, table_name):
+        try:
+            select_sql_script = self.open_query(query_path, table_name)
+            rows =  self.run_select_query(select_sql_script)# Get the results after executing the query
+            colnames = [desc[0] for desc in self.mycursor.description]
+            df = pd.DataFrame(rows, columns=colnames)
+            print("✓ DataFrame created successfully.")
+            return df
+        except psycopg2.Error as e:
+            return f"Error creating DataFrame: {e}"
 
