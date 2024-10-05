@@ -144,6 +144,107 @@ Inconsistencies were identified in the **winners** column, where all records app
 The analysis highlighted a decrease in the number of categories in **2011**, due to the elimination of several of them. This decision was made as part of a review of the event structure, which limited recognition opportunities in a widely followed event.
 
 ---
+## Column Explanations of the DataFrame
+
+1. **Artist 🎤**
+    - **Description:** Name of the nominated artist.
+    - **Data Type:** String
+    - **Notes:** Found 3,152 duplicate values and 1,840 missing values. The most frequent value is "(Various Artists)", which appears 66 times.
+  
+2. **Category 🏆**
+    - **Description:** Category in which the artist is nominated.
+    - **Data Type:** String
+    - **Notes:** The most frequent category is "Song of the Year," with 70 occurrences. There are no missing or duplicate values.
+  
+3. **Img 🖼️**
+    - **Description:** Link to the image of the artist or nominee.
+    - **Data Type:** String
+    - **Notes:** Found 1,367 missing values. The most repeated image is of John Williams, which appears 26 times.
+  
+4. **Nominee 👤**
+    - **Description:** Name of the nominee.
+    - **Data Type:** String
+    - **Notes:** Found 679 duplicate values and 6 missing values. The most repeated nominee is "Robert Woods," with 7 occurrences.
+  
+5. **Published At 📅**
+    - **Description:** Date and time when the nomination was published.
+    - **Data Type:** String
+    - **Notes:** There are no missing values. The most frequent value is "2017-11-28T00:03:45-08:00," which appears 4,205 times.
+  
+6. **Title 🎬**
+    - **Description:** Title of the Grammy Awards ceremony.
+    - **Data Type:** String
+    - **Notes:** There are no missing or duplicate values. The most frequent title is "62nd Annual Grammy Awards (2019)," with 433 occurrences.
+  
+7. **Updated At ⏰**
+    - **Description:** Date and time of the last update of the nomination.
+    - **Data Type:** String
+    - **Notes:** There are no missing or duplicate values. The most repeated value is "2019-09-10T01:08:19-07:00," with 778 occurrences.
+  
+8. **Winner 🏅**
+    - **Description:** Indicates whether the nominee won the award.
+    - **Data Type:** Boolean
+    - **Notes:** All values are "True," indicating that all nominees in the file are winners.
+  
+9. **Workers 🧑‍💼**
+    - **Description:** Names of the people who worked on the nomination.
+    - **Data Type:** String
+    - **Notes:** Found 2,190 missing values. The most repeated value is "John Williams, composer (John Williams)," with 20 occurrences.
+  
+10. **Year 📅**
+    - **Description:** Year of the Grammy Awards ceremony.
+    - **Data Type:** Integer
+    - **Notes:** There are no missing or duplicate values. The most repeated year is 2019, with 433 occurrences.
+
+---
+
+## Extraction, Transformation, and Loading (ETL) of the datasets
+
+## ETL Spotify
+
+The ETL (Extraction, Transformation, and Loading) process for the Spotify dataset is implemented in the `EtlSpotifyAirflow` class. Initially, an instance of the class is created that accepts a pandas DataFrame as input, representing the Spotify data. Data cleaning is carried out in several stages, starting with cleaning specific columns such as 'artists', 'album_name', and 'track_name'. In the `clean_column` method, null values are filled with empty strings, whitespace is removed, all characters are converted to lowercase, and accented characters are eliminated using the `unidecode` function. Additionally, any resulting empty string is replaced with a null value.
+
+Subsequently, duplicates are removed based on the 'track_id' column using the `remove_duplicates` method, which allows specifying whether to keep the first, the last, or to remove all duplicates. To ensure data integrity, a filter is applied in the `filter_time_signature` method to retain only records where the `time_signature` is not zero and `duration_ms` is greater than zero, which helps eliminate invalid records. Finally, the `run_etl` method coordinates the entire process, invoking the cleaning, duplicate removal, and filtering methods, returning a clean Spotify DataFrame ready for further analysis or loading into a target system.
+
+---
+
+## ETL Grammy
+
+The ETL (Extraction, Transformation, and Loading) process for the Grammy awards dataset is implemented in the `EtlGrammyAirflow` class. This class accepts a pandas DataFrame containing Grammy information. The process starts by simplifying the award titles in the 'title' column, where a regular expression is used to identify and modify the annual Grammy titles, streamlining them into a more straightforward and clear format.
+
+Next, the first winner is marked in the 'winner' column using the `mark_winner` method, which groups the data by year and category, setting the first record as true and the others as false. To extract the artist's name from the 'workers' column, the `extract_artist_from_workers` method is applied, which uses regular expressions to identify the artist's name within parentheses and assigns it to the 'artist' column. If the 'artist' field remains null after this extraction, it is filled with the value from the 'nominee' column via the `fill_missing_artists` method.
+
+Subsequently, records where the 'artist' column is null are removed using the `remove_null_artists` method, ensuring that all records in the DataFrame have a valid artist. Then, cleaning is performed on the 'category', 'artist', and 'nominee' columns to remove whitespace, convert everything to lowercase, and eliminate accents using the `unidecode` function. Finally, award categories are filtered to include only those that contain specific keywords like 'album', 'song', and 'artist', using the `filter_categories` method.
+
+The `run_etl` method coordinates this entire process, invoking each of the previous methods and ensuring that the Grammy dataset is clean and ready for analysis. At the end of the process, a confirmation message is printed, and the transformed DataFrame is returned.
+
+---
+
+## Merging the datasets
+
+The `EtlGrammySpotifyMerge` class is responsible for merging data from two sources: the Grammy awards and Spotify. Initially, it is initialized with two DataFrames, one containing Grammy data and the other with Spotify data, along with a path to save the final file.
+
+The first method, `merge_albums`, performs a merge of the album data, using an outer join to retain all records. Artist and album names are compared, adding a column that indicates whether an album was nominated for a Grammy. Albums that are only in Spotify are also filtered, showing how many records do not have a nomination.
+
+Next, the `merge_songs` method carries out a similar task, but this time merging the song data based on the names of the artists and the songs. As in the case of albums, it marks whether the songs have Grammy nominations and counts those that are exclusively on Spotify.
+
+After merging the album and song data, the `combine_data` method combines both sets, removing duplicates and providing a unique DataFrame.
+
+Finally, the `save_combined_data` method saves the combined DataFrame to an Excel file at the specified path, creating the folder if it does not exist. The `run_merge` method coordinates the entire process, executing the merges of albums and songs, combining the results, and saving the final file.
+
+---
+
+## Integration with Apache Airflow
+
+The defined DAG manages the ETL process for the Spotify and Grammy datasets. First, the Spotify dataset is loaded from a PostgreSQL database, which is stored in a DataFrame and sent to XCom for later use. Similarly, the Grammy dataset is loaded, which is also stored in a DataFrame and sent to XCom.
+
+Once both datasets are available in XCom, the transformation process for the Spotify dataset begins using the `EtlSpotifyAirflow` class, which utilizes the loaded data to execute its ETL logic. This process is followed by the transformation of the Grammy dataset using the `EtlGrammyAirflow` class, which also operates on the previously loaded DataFrame.
+
+Then, the merging of both datasets takes place through the `EtlGrammySpotifyMerge` class, which combines the DataFrames and sends the result to XCom. After the merge, the schema of the new combined table is inferred, and SQL seed scripts are generated using the `CreateSchemaSeed` class. These scripts are essential for creating the table in PostgreSQL and for inserting the data.
+
+Finally, the corresponding table is created in the database, and data is inserted using the generated scripts. The structure of the DAG ensures that tasks are performed in the correct order, facilitating data flow and managing dependencies between tasks.
+![airflow image completed](docs/img/Airflow.PNG)
+---
 
 ## Technologies Used
 
@@ -166,7 +267,7 @@ For a correct use it is necessary to follow the following steps:
     
     ```bash
     git clone https://github.com/Juananalv205/Workshop002_spotify_grammy.git
-    cd Workshop--001-Data-engineer
+    cd Workshop002_spotify_grammy
     
     ```
     
